@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ระบบบันทึกเวลาคลินิกบ้านฮักดี</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="บ้านฮักดี">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0284c7">
+
+    <!-- Google Fonts: Noto Sans Thai -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome (Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SweetAlert2 (Notifications) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans Thai"', 'sans-serif'],
+                    },
+                    colors: {
+                        ocean: {
+                            light: '#bae6fd', 
+                            mid: '#0ea5e9',   
+                            dark: '#0369a1',  
+                        }
+                    },
+                    animation: {
+                        'gradient-x': 'gradient-x 15s ease infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                    },
+                    keyframes: {
+                        'gradient-x': {
+                            '0%, 100%': {
+                                'background-size': '400% 400%',
+                                'background-position': '0% 50%'
+                            },
+                            '50%': {
+                                'background-size': '400% 400%',
+                                'background-position': '100% 50%'
+                            },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background: linear-gradient(-45deg, #e0f2fe, #38bdf8, #0284c7, #818cf8);
+            background-size: 400% 400%;
+            animation: gradient-x 15s ease infinite;
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.1);
+        }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+        }
+        .btn-hover-effect {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .btn-hover-effect:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased font-sans flex items-center justify-center p-4 relative overflow-hidden">
+
+    <!-- ของตกแต่งพื้นหลัง -->
+    <div class="absolute top-10 left-10 w-20 h-20 bg-white opacity-20 rounded-full blur-xl animate-bounce-slow"></div>
+    <div class="absolute bottom-20 right-10 w-32 h-32 bg-sky-200 opacity-30 rounded-full blur-2xl animate-pulse"></div>
+
+    <main class="w-full max-w-sm sm:max-w-md glass-card rounded-[2rem] p-6 sm:p-8 relative z-10 flex flex-col gap-6">
+        
+        <header class="text-center space-y-3">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-sky-100 to-blue-200 text-blue-600 mb-1 shadow-inner rotate-3 hover:rotate-0 transition-transform duration-300">
+                <i class="fa-solid fa-house-medical text-4xl drop-shadow-sm"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-sky-600 to-blue-700">
+                    คลินิกบ้านฮักดี
+                </h1>
+                <p class="text-sm font-medium text-gray-500 mt-1 bg-white/50 inline-block px-3 py-1 rounded-full">
+                    ระบบบันทึกเวลาเข้า-ออกงาน
+                </p>
+            </div>
+        </header>
+
+        <!-- แสดงเวลา -->
+        <section class="bg-white/70 rounded-2xl p-4 text-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border border-white">
+            <div class="text-sm sm:text-base text-gray-600 font-medium mb-1 flex items-center justify-center gap-2" id="dateDisplay">
+                <i class="fa-regular fa-calendar-days text-sky-500"></i>
+                <span id="dateText">กำลังโหลดวันที่...</span>
+            </div>
+            <div class="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-700 to-gray-900 tracking-wider font-mono tabular-nums drop-shadow-sm" id="timeDisplay">
+                00:00:00
+            </div>
+        </section>
+
+        <section class="space-y-6 mt-2">
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 group-focus-within:text-sky-500 transition-colors z-10">
+                    <i class="fa-solid fa-id-card text-xl"></i>
+                </div>
+                <input type="text" id="empId" 
+                    class="block w-full pl-12 pr-4 py-4 glass-input border-2 border-transparent rounded-2xl text-xl font-bold text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-sky-400 transition-all uppercase tracking-[0.2em] shadow-sm hover:shadow-md"
+                    placeholder="รหัสพนักงาน"
+                    autocomplete="off"
+                    oninput="this.value = this.value.toUpperCase()">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="handleCheckInOut('เข้างาน')" class="btn-hover-effect group relative flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-cyan-400 to-teal-500 hover:from-cyan-300 hover:to-teal-400 text-white py-4 rounded-2xl shadow-[0_8px_20px_rgba(6,182,212,0.3)] hover:shadow-[0_8px_25px_rgba(6,182,212,0.4)] transition-all duration-200">
+                    <div class="bg-white/20 p-3 rounded-full group-hover:scale-110 group-hover:rotate-12 transition-transform">
+                        <i class="fa-solid fa-person-walking-arrow-right text-2xl"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-wide">เข้างาน</span>
+                </button>
+                
+                <button onclick="handleCheckInOut('เลิกงาน')" class="btn-hover-effect group relative flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white py-4 rounded-2xl shadow-[0_8px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_25px_rgba(59,130,246,0.4)] transition-all duration-200">
+                    <div class="bg-white/20 p-3 rounded-full group-hover:scale-110 group-hover:-rotate-12 transition-transform">
+                        <i class="fa-solid fa-house-person-leave text-2xl"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-wide">เลิกงาน</span>
+                </button>
+            </div>
+        </section>
+
+        <footer class="mt-2 pt-4 border-t border-gray-200/50 flex flex-col items-center gap-2">
+            <button onclick="showInstallInstructions()" class="text-sm text-gray-700 bg-white/40 hover:bg-white/80 px-5 py-2.5 rounded-full flex items-center gap-2 transition-colors font-semibold shadow-sm border border-white/50 active:scale-95">
+                <i class="fa-solid fa-arrow-up-right-from-square text-sky-500"></i>
+                ติดตั้งแอปลงหน้าจอมือถือ
+            </button>
+            <p class="text-[10px] text-gray-400 font-medium">Powered by 2026 Hug Dee Home Clinic</p>
+        </footer>
+    </main>
+
+    <script>
+        // กำหนด URL ของ Google Apps Script ที่ได้รับ
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwx65S4ku8kpACd5KzgWC077MaOb8pVqdUlvZWjJc7iDaoEoFteHLxuiMHI_zeu_qht/exec";
+
+        // ==========================================
+        // 1. ฟังก์ชันอัปเดตนาฬิกา (Real-time Clock)
+        // ==========================================
+        function updateClock() {
+            const now = new Date();
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const timeStr = now.toLocaleTimeString('th-TH', timeOptions);
+            document.getElementById('timeDisplay').textContent = timeStr;
+
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('th-TH', dateOptions);
+            document.getElementById('dateText').textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock(); 
+
+        // ==========================================
+        // 2. ฟังก์ชันขอพิกัด (Geolocation)
+        // ==========================================
+        function getGeolocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error("อุปกรณ์ของคุณไม่รองรับการระบุตำแหน่ง GPS"));
+                } else {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            resolve({
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            });
+                        },
+                        error => {
+                            reject(new Error("กรุณาอนุญาตการเข้าถึงตำแหน่งที่ตั้ง (GPS) เพื่อบันทึกเวลา"));
+                        },
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    );
+                }
+            });
+        }
+
+        // ==========================================
+        // 3. ฟังก์ชันหลักสำหรับ กดเข้างาน/เลิกงาน
+        // ==========================================
+        async function handleCheckInOut(status) {
+            const empIdInput = document.getElementById('empId');
+            const empId = empIdInput.value.trim().toUpperCase(); 
+
+            // ตรวจสอบความถูกต้อง
+            if (!empId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ลืมใส่รหัสพนักงาน!',
+                    text: 'กรุณากรอกรหัสพนักงานของคุณก่อนกดบันทึก',
+                    confirmButtonColor: '#0ea5e9',
+                    confirmButtonText: 'ตกลง',
+                    customClass: { popup: 'rounded-[2rem]' }
+                });
+                empIdInput.focus();
+                return;
+            }
+
+            // แสดงสถานะกำลังโหลด
+            Swal.fire({
+                title: 'กำลังตรวจสอบพิกัด...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                customClass: { popup: 'rounded-[2rem]' }
+            });
+
+            try {
+                // 1. ดึงพิกัด
+                const location = await getGeolocation();
+                
+                Swal.fire({
+                    title: 'กำลังบันทึกข้อมูล...',
+                    text: `สถานะ: ${status}`,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                    customClass: { popup: 'rounded-[2rem]' }
+                });
+
+                // 2. เตรียมข้อมูล
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                
+                const payload = {
+                    date: dateStr,
+                    time: timeStr,
+                    empId: empId,
+                    status: status,
+                    lat: location.lat,
+                    lng: location.lng
+                };
+
+                // 3. ส่งไป Google Apps Script (ดักจับ SyntaxError "<" ที่นี่)
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    }
+                });
+
+                // ตรวจสอบว่าได้ HTML กลับมาหรือไม่
+                const textResponse = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResponse);
+                } catch (e) {
+                    console.error("Parse Error:", textResponse);
+                    throw new Error("ระบบฝั่ง Google ส่งข้อมูลผิดพลาด (อาจยังไม่ได้ตั้งสิทธิ์ Deployment เป็น Anyone)");
+                }
+
+                if (result.status === "success") {
+                    // สำเร็จ
+                    Swal.fire({
+                        icon: 'success',
+                        title: `บันทึก${status}สำเร็จ!`,
+                        html: `
+                            <div class="text-left bg-sky-50/50 p-4 rounded-2xl mt-2 border border-sky-100">
+                                <p class="mb-1"><i class="fa-solid fa-id-card text-sky-500 w-5"></i> <b>รหัส:</b> <span class="text-lg text-blue-700 font-bold">${empId}</span></p>
+                                <p class="mb-1"><i class="fa-regular fa-clock text-sky-500 w-5"></i> <b>เวลา:</b> ${timeStr}</p>
+                                <p class="text-sm text-teal-600 mt-2"><i class="fa-solid fa-location-dot"></i> ระบุพิกัดสำเร็จ</p>
+                            </div>
+                        `,
+                        confirmButtonColor: '#0ea5e9',
+                        confirmButtonText: 'เยี่ยมเลย!',
+                        timer: 4000, 
+                        customClass: { popup: 'rounded-[2rem]' }
+                    });
+                    
+                    empIdInput.value = '';
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                // แจ้งเตือน Error
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด!',
+                    text: error.message,
+                    confirmButtonColor: '#0ea5e9',
+                    customClass: { popup: 'rounded-[2rem]' }
+                });
+            }
+        }
+
+        // ==========================================
+        // 4. ฟังก์ชันแนะนำการติดตั้งลงหน้าจอ
+        // ==========================================
+        function showInstallInstructions() {
+            let instructionsHTML = `
+                <div class="text-left mt-2 text-gray-700">
+                    <p class="font-bold text-center text-lg mb-4 text-blue-700">วิธีสร้างไอคอนทางลัดไว้หน้าจอ</p>
+                    
+                    <div class="bg-sky-50 p-4 rounded-2xl border border-sky-100 mb-4">
+                        <p class="text-sm font-bold mb-2">📱 สำหรับ iPhone / iPad (Safari):</p>
+                        <ol class="list-decimal pl-5 space-y-1 text-sm">
+                            <li>แตะไอคอน <i class="fa-solid fa-arrow-up-from-bracket text-blue-500 mx-1"></i> (Share) ตรงกลางแถบด้านล่าง</li>
+                            <li>เลื่อนลงมาแล้วเลือก <b>"เพิ่มไปยังหน้าจอโฮม"</b> (Add to Home Screen)</li>
+                            <li>กด <b>"เพิ่ม"</b> (Add) มุมขวาบน</li>
+                        </ol>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                        <p class="text-sm font-bold mb-2">📱 สำหรับ Android (Chrome):</p>
+                        <ol class="list-decimal pl-5 space-y-1 text-sm">
+                            <li>แตะไอคอน <i class="fa-solid fa-ellipsis-vertical text-gray-600 mx-1"></i> (เมนู 3 จุด) มุมขวาบน</li>
+                            <li>เลือก <b>"เพิ่มลงในหน้าจอหลัก"</b> (Add to Home screen)</li>
+                            <li>กด <b>"เพิ่ม"</b> หรือ "ติดตั้ง"</li>
+                        </ol>
+                    </div>
+                </div>
+            `;
+
+            Swal.fire({
+                html: instructionsHTML,
+                showConfirmButton: true,
+                confirmButtonText: 'เข้าใจแล้ว',
+                confirmButtonColor: '#0ea5e9',
+                customClass: {
+                    popup: 'rounded-[2rem]'
+                }
+            });
+        }
+    </script>
+</body>
+</html>
